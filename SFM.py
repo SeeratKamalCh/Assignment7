@@ -29,6 +29,7 @@ def read_3D():
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(a,b,c, c='b', marker='*')
+    plt.savefig("images/Teapot_original.png")
     return a, b, c
 
 # This function creates the 2D dataset for the teapot using orthographic projection camera
@@ -57,7 +58,7 @@ def create_2D_Dataset(x_points, y_points, z_points):
             x_cal.append(x_euclidean)
             y_cal.append(y_euclidean)
         # show the current frame's 2D dataset
-        show_graph(x_cal, y_cal)
+        show_graph(x_cal, y_cal, j)
         # increment angle
         y_angle = y_angle + 5
         # increment y_translation
@@ -112,11 +113,12 @@ def projection_matrix(matrix_R, vector_T):
 
     
 # This function is to display  the 2D scatterplot graphs of 2D dataset generated
-def show_graph(x, y):
+def show_graph(x, y, title):
     fig=plt.figure()
-    ax=fig.add_axes([0,0,1,1])
-    scat = ax.scatter(x, y, color='r')
+    ax=fig.add_axes([0, 0, 1, 1])
+    ax.scatter(x, y, color='r')
     plt.show()
+    plt.savefig("images/2D_Image_" + str(title) + ".png")
     return
 
 #This function generates measurements matrix W 
@@ -146,13 +148,14 @@ def tomasi_kanadi_factorization(matrix_W):
     d3 = D[2]
     # get diagonal matrix for first three eigenvalues
     D_hat = np.array([[d1, 0, 0], [0, d2, 0], [0, 0, d3]])
-    V = np.transpose(Vt)
     # get rows x 3 blocks from V transpose 
     V_hat = Vt[0:3 ,:]
+    matrix_M = np.matmul(U_hat, np.sqrt(D_hat))
+    matrix_S = np.matmul(np.sqrt(D_hat), V_hat)
     # now remove affine ambiguity
     # D = AQQinvX = (AQ) * (QinvX) where A = motion matrix and X=shape matrix
-    R_hat = U_hat
-    S_hat = V_hat
+    R_hat = matrix_M
+    S_hat = matrix_S
     # for AI = B specify the A and B matrix
     matrix_A = np.zeros((FRAMES * 3, 6))
     matrix_B = np.zeros((FRAMES * 3,1))
@@ -163,33 +166,33 @@ def tomasi_kanadi_factorization(matrix_W):
     
     for i in range(FRAMES):
         # get 6 elements of R_hat for frame i R = 2FX3 2 rows for single R vector => 2x3
-        mi1_x = R_hat[2*i,0]
-        mi1_y = R_hat[2*i,1]
-        mi1_z = R_hat[2*i,2]
-        mi2_x = R_hat[2*i+1,0]
-        mi2_y = R_hat[2*i+1,1]
-        mi2_z = R_hat[2*i+1,2]
+        mi1_x = R_hat[2*i, 0]
+        mi1_y = R_hat[2*i, 1]
+        mi1_z = R_hat[2*i, 2]
+        mi2_x = R_hat[2*i+1, 0]
+        mi2_y = R_hat[2*i+1, 1]
+        mi2_z = R_hat[2*i+1, 2]
         # calculate matrix_A vector for 3 * i index
-        matrix_A[3*i,0] = mi1_x*mi1_x
-        matrix_A[3*i,1] = 2*mi1_x*mi1_y
-        matrix_A[3*i,2] = 2*mi1_x*mi1_z
-        matrix_A[3*i,3] = mi1_y*mi1_y
-        matrix_A[3*i,4] = 2*mi1_y*mi1_z
-        matrix_A[3*i,5] = mi1_z*mi1_z
+        matrix_A[3*i, 0] = mi1_x*mi1_x
+        matrix_A[3*i, 1] = 2*mi1_x*mi1_y
+        matrix_A[3*i, 2] = 2*mi1_x*mi1_z
+        matrix_A[3*i, 3] = mi1_y*mi1_y
+        matrix_A[3*i, 4] = 2*mi1_y*mi1_z
+        matrix_A[3*i, 5] = mi1_z*mi1_z
          # calculate matrix_A vector for 3 * i + 1 index
-        matrix_A[3*i+1,0] = mi2_x*mi2_x
-        matrix_A[3*i+1,1] = 2*mi2_x*mi2_y
-        matrix_A[3*i+1,2] = 2*mi2_x*mi2_z
-        matrix_A[3*i+1,3] = mi2_y*mi2_y
-        matrix_A[3*i+1,4] = 2*mi2_y*mi2_z
-        matrix_A[3*i+1,5] = mi2_z*mi2_z
+        matrix_A[3*i+1, 0] = mi2_x*mi2_x
+        matrix_A[3*i+1, 1] = 2*mi2_x*mi2_y
+        matrix_A[3*i+1, 2] = 2*mi2_x*mi2_z
+        matrix_A[3*i+1, 3] = mi2_y*mi2_y
+        matrix_A[3*i+1, 4] = 2*mi2_y*mi2_z
+        matrix_A[3*i+1, 5] = mi2_z*mi2_z
          # calculate matrix_A vector for 3 * i + 2 index
-        matrix_A[3*i+2,0] = mi1_x*mi2_x
-        matrix_A[3*i+2,1] = mi1_x*mi2_y + mi2_x*mi1_y
-        matrix_A[3*i+2,2] = mi1_x*mi2_z + mi2_x*mi2_z
-        matrix_A[3*i+2,3] = mi1_y*mi2_y
-        matrix_A[3*i+2,4] = mi1_y*mi2_z + mi2_y*mi1_z
-        matrix_A[3*i+2,5] = mi1_z + mi2_z
+        matrix_A[3*i+2, 0] = mi1_x*mi2_x
+        matrix_A[3*i+2, 1] = mi1_x*mi2_y + mi2_x*mi1_y
+        matrix_A[3*i+2, 2] = mi1_x*mi2_z + mi2_x*mi2_z
+        matrix_A[3*i+2, 3] = mi1_y*mi2_y
+        matrix_A[3*i+2, 4] = mi1_y*mi2_z + mi2_y*mi1_z
+        matrix_A[3*i+2, 5] = mi1_z + mi2_z
         # matrix_B for orthonormal vectors
         matrix_B[3*i] = 1
         matrix_B[3*i+1] = 1
@@ -200,16 +203,15 @@ def tomasi_kanadi_factorization(matrix_W):
     I = np.linalg.lstsq(matrix_A, matrix_B, rcond=None)[0]
     I = I.reshape(1, I.shape[0]*I.shape[1])[0]
     # L = Q*Q_transpose
-    L = [[I[0], I[1], I[2]], [I[1], I[3], I[4]],[I[2], I[4], I[5]]]
-    L = np.array(L)
+    L = np.array([[I[0], I[1], I[2]], [I[1], I[3], I[4]],[I[2], I[4], I[5]]])
     # apply cholesky factorization to get Q from Q*Q_transpose
     Q = np.linalg.cholesky(L)
     Q = np.transpose(Q)
     # motion matrix = R_hat * Q
-    matrix_M = np.matmul(R_hat, Q)
+    matrix_M = np.matmul(matrix_M, Q)
     Qinv = np.linalg.inv(Q)
     # shape matrix = O_inverse, S_hat
-    matrix_S = np.matmul(Qinv, S_hat)
+    matrix_S = np.matmul(Qinv, matrix_S)
     matrix_S = np.transpose(matrix_S)
     return matrix_M, matrix_S
 
@@ -222,6 +224,7 @@ def re_project(matrix_S):
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(matrix_S[:,0],matrix_S[:,1],matrix_S[:,2], c='b', marker='*')
+    plt.savefig("images/Teapot_reconstructed.png")
     return x_cal, y_cal, z_cal
 
 
@@ -255,7 +258,6 @@ def main():
     x_cal, y_cal, z_cal = re_project(matrix_S)
     # calculate error
     error = calculate_error(x, y, z, x_cal, y_cal, z_cal)
-    print(error)
     return
 
 main()
